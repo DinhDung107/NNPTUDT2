@@ -1,3 +1,1 @@
-# NNPTUD-S2
-Lớp NNPTUD-Sáng t2
-Mỗi ngày 1 nhánh
+Nguyễn Đình Dũng - 2280600398
