@@ -37,6 +37,30 @@
     <div>
         <input type="submit" value="Save" onclick="Save()"/>
     </div>
+
+    <hr/>
+    <div>
+        <h2>Comments Management</h2>
+        <table>
+            <thead>
+                <tr>
+                    <td>ID</td>
+                    <td>Text</td>
+                    <td>PostID</td>
+                    <td>Actions</td>
+                </tr>
+            </thead>
+            <tbody id="comment-body-table">
+                
+            </tbody>
+        </table>
+    </div>
+    <div>
+        <input type="text" id="comment_id_txt" placeholder="Comment ID (Leave empty for new)"/>
+        <input type="text" id="comment_text_txt" placeholder="Comment Text"/>
+        <input type="text" id="comment_post_id_txt" placeholder="Post ID"/>
+        <input type="submit" value="Save Comment" onclick="SaveComment()"/>
+    </div>
 </body>
 
 </html>
