@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
-let {ConvertTitleToSlug} = require('../utils/titleHandler')
-let {getMaxID} = require('../utils/IdHandler')
+let { ConvertTitleToSlug } = require('../utils/titleHandler')
+let { getMaxID } = require('../utils/IdHandler')
 let data = [
   {
     "id": 1,
@@ -1167,14 +1167,24 @@ let data = [
 router.get('/', function (req, res, next) {
   let queries = req.query;
   let titleQ = queries.title ? queries.title : '';
-  let minPrice = queries.minPrice ? queries.minPrice : 0;
-  let maxPrice = queries.maxPrice ? queries.maxPrice : 1E6;
-  let page = queries.page ? queries.page : 1;
-  let limit = queries.limit ? queries.limit : 10;
-  console.log(queries);
+  let slugQ = queries.slug ? queries.slug : '';
+  let minPrice = queries.minPrice ? parseFloat(queries.minPrice) : 0;
+  let maxPrice = queries.maxPrice ? parseFloat(queries.maxPrice) : 1E6;
+  let page = queries.page ? parseInt(queries.page) : 1;
+  let limit = queries.limit ? parseInt(queries.limit) : 10;
+
+  if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+    return res.status(400).send({ message: "Page and limit must be positive integers" });
+  }
+
+  if (maxPrice < minPrice) {
+    return res.status(400).send({ message: "maxPrice must be greater than or equal to minPrice" });
+  }
+
   let result = data.filter(
     function (e) {
-      return (!e.isDeleted) && e.title.includes(titleQ) &&
+      let matchSlug = slugQ ? e.slug === slugQ : true;
+      return (!e.isDeleted) && e.title.includes(titleQ) && matchSlug &&
         e.price >= minPrice && e.price <= maxPrice
     }
   );
@@ -1199,11 +1209,18 @@ router.get('/:id', function (req, res, next) {
 
 
 router.post('/', function (req, res, next) {
+  if (!req.body.title || req.body.price === undefined || req.body.price === null || String(req.body.price).trim() === '') {
+    return res.status(400).send({ message: "Title and price are required" });
+  }
+  if (isNaN(req.body.price)) {
+    return res.status(400).send({ message: "Price must be a number" });
+  }
+
   let newObj = {
     id: (getMaxID(data) + 1) + '',
     title: req.body.title,
     slug: ConvertTitleToSlug(req.body.title),
-    price: req.body.price,
+    price: parseFloat(req.body.price),
     description: req.body.description,
     category: req.body.category,
     images: req.body.images,
