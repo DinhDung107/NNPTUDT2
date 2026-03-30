@@ -20,5 +20,14 @@ module.exports = {
             text: "click vao day de reset password", // Plain-text version of the message
             html: "click vao <a href=" + url + ">day</a> de reset password", // HTML version of the message
         });
+    },
+    sendPasswordMail: async function (to, username, password) {
+        const info = await transporter.sendMail({
+            from: 'admin@heha.com',
+            to: to,
+            subject: "Mật khẩu Của Bạn Được Khởi Tạo",
+            text: `Xin chào ${username}, Mật khẩu của bạn là: ${password}`, // Plain-text version of the message
+            html: `<p>Xin chào <strong>${username}</strong>,</p><p>Mật khẩu của bạn là: <strong>${password}</strong></p><p>Vui lòng đăng nhập và bảo mật thông tin.</p>`, // HTML version of the message
+        });
     }
-}
+}

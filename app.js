@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-mongoose.connect('mongodb://localhost:27017/NNPTUD-S2');
+mongoose.connect('mongodb+srv://minhphi290304_db_user:UQgxwO8UAI9OTPV2@cluster0.romcgub.mongodb.net/NNPTUD-S2?retryWrites=true&w=majority&appName=Cluster0');
 mongoose.connection.on('connected', function () {
   console.log("da connect");
 })
@@ -33,6 +33,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/carts', require('./routes/carts'));
 app.use('/products', require('./routes/products'));
 app.use('/upload', require('./routes/upload'));
+app.use('/messages', require('./routes/messages'));
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

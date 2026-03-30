@@ -8,6 +8,11 @@ let productModel = require('../schemas/products')
 let InventoryModel = require('../schemas/inventories')
 const { default: mongoose } = require('mongoose');
 var slugify = require('slugify')
+let userModel = require('../schemas/users')
+let roleModel = require('../schemas/roles')
+let userController = require('../controllers/users')
+let { sendPasswordMail } = require('../utils/mailHandler')
+const crypto = require('crypto')
 
 router.post('/single', uploadImage.single('file'), function (req, res, next) {
     if (!req.file) {
@@ -126,4 +131,89 @@ router.post('/excel/v1', uploadExcel.single('file'), async function (req, res, n
 
 })
 
-module.exports = router;
+router.post('/excel/users', uploadExcel.single('file'), async function (req, res, next) {
+    if (!req.file) {
+        return res.status(400).send({ message: "File not found" });
+    }
+    let filePath = path.join(__dirname, '../uploads', req.file.filename);
+    let workBook = new exceljs.Workbook();
+    await workBook.xlsx.readFile(filePath);
+    let workSheet = workBook.worksheets[0];
+    
+    let result = [];
+    let errors = [];
+
+    let users = await userModel.find({});
+    let userNames = users.map(u => u.username);
+    let userEmails = users.map(u => u.email);
+
+    let defaultRole = await roleModel.findOne({ name: 'USER' });
+    if (!defaultRole) {
+        defaultRole = await roleModel.findOne(); // Lấy role đầu tiên nếu không có USER
+    }
+
+    if (!defaultRole) {
+        return res.status(400).send({ message: "System error: No role defined in the database" });
+    }
+
+    for (let index = 2; index <= workSheet.rowCount; index++) {
+        let rowError = [];
+        let row = workSheet.getRow(index);
+        
+        let username = row.getCell(1).value;
+        let email = row.getCell(2).value?.text || row.getCell(2).value; 
+        
+        if (!username || !email) {
+            continue; 
+        }
+
+        if (userNames.includes(username)) {
+            rowError.push("username bị trùng " + username);
+        }
+        if (userEmails.includes(email)) {
+            rowError.push("email bị trùng " + email);
+        }
+
+        if (rowError.length > 0) {
+            errors.push(rowError);
+            result.push({ username, email, error: rowError.join(", ") });
+        } else {
+            let session = await mongoose.startSession();
+            session.startTransaction();
+            try {
+                let password = crypto.randomBytes(8).toString('hex'); // 16 ký tự hexa
+                let newItem = await userController.CreateAnUser(
+                    username,
+                    password,
+                    email,
+                    defaultRole._id, // role
+                    "", // fullName
+                    "", // avatarUrl
+                    false, // status
+                    session
+                );
+                
+                await session.commitTransaction();
+                await session.endSession();
+
+                userNames.push(username);
+                userEmails.push(email);
+                
+                // Gửi email
+                await sendPasswordMail(email, username, password);
+
+                result.push({ username, email, message: "Created and email sent" });
+            } catch (errorCreate) {
+                await session.abortTransaction();
+                await session.endSession();
+                errors.push(errorCreate.message);
+                result.push({ username, email, error: errorCreate.message });
+            }
+        }
+    }
+    
+    fs.unlinkSync(filePath);
+    res.send({ results: result, errors: errors });
+});
+
+module.exports = router;
